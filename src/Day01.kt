@@ -1,22 +1,11 @@
 fun main() {
     fun calibrationValue(line: String): Int {
-        var first = ""
-        var last = ""
-        line.indices.forEach { index ->
-            val char = line[index]
-            if (char.isDigit()) {
-                val string = char.toString()
-                if (first.isEmpty()) first = string
-                last = string
-            } else {
-                lettersSet.forEach { letters ->
-                    if (line.substring(index, line.length).startsWith(letters)) {
-                        val string = lettersToDigitMap.getValue(letters)
-                        if (first.isEmpty()) first = string
-                        last = string
-                    }
-                }
-            }
+        val (first, last) = line.indices.fold("" to "") { (first, last), index ->
+            val (matchedDigit) = possibleDigits.matchAt(line, index)?.destructured ?: return@fold first to last
+            // if not in the map it must be a single digit char
+            val digitString = lettersToDigitMap[matchedDigit] ?: matchedDigit
+            // an empty `first` indicates there was no match before
+            first.ifEmpty { digitString } to digitString
         }
         return "$first$last".toInt()
     }
@@ -49,14 +38,4 @@ val lettersToDigitMap = mapOf(
     "eight" to "8",
     "nine" to "9"
 )
-val lettersSet: Set<String> = setOf(
-    "one",
-    "two",
-    "three",
-    "four",
-    "five",
-    "six",
-    "seven",
-    "eight",
-    "nine",
-)
+val possibleDigits = "(\\d|${lettersToDigitMap.keys.joinToString("|")})".toRegex()
