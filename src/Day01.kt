@@ -1,8 +1,9 @@
 fun main() {
     fun calibrationValue(line: String): Int {
         val (first, last) = line.indices.fold("" to "") { (first, last), index ->
+            // if no possible digit found, just return the current result and continue folding
             val (matchedDigit) = possibleDigits.matchAt(line, index)?.destructured ?: return@fold first to last
-            // if not in the map it must be a single digit char
+            // if not in the `lettersToDigitMap` map it must be a single digit char
             val digitString = lettersToDigitMap[matchedDigit] ?: matchedDigit
             // an empty `first` indicates there was no match before
             first.ifEmpty { digitString } to digitString
