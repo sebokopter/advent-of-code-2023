@@ -1,36 +1,51 @@
-fun main() {
-    fun List<String>.sumUpGames(block: (Int, List<Pair<Int, String>>) -> Int): Int = sumOf { line ->
-        val (gameId, game) = line.split(": ")
-        val (_, id) = gameId.split(" ")
-        val cubes = game.split("; ").flatMap { setOfCubes ->
-            val cubes = setOfCubes.split(", ")
-            cubes.map {
+data class Game(val gameId: Int, val setsOfCubes: List<SetOfCubes>) {
+    companion object {
+        operator fun invoke(line: String): Game {
+            val (string1, string2) = line.split(": ")
+            val (_, id) = string1.split(" ")
+            val setsOfCubes = string2.split("; ").map { SetOfCubes(it) }
+            return Game(id.toInt(), setsOfCubes)
+        }
+    }
+}
+
+data class SetOfCubes(val cubes: Set<Cubes>) {
+    companion object {
+        operator fun invoke(input: String): SetOfCubes {
+            val cubes = input.split(", ")
+            return SetOfCubes(cubes.map {
                 val (amount, color) = it.split(" ")
-                val pair = amount.toInt() to color
-                pair
-            }
-        }
-        block(id.toInt(), cubes)
-    }
-
-    fun part1(input: List<String>): Int {
-        return input.sumUpGames { id, cubes ->
-            val validInput = cubes.all { (amount, color) ->
-                amount <= maxCubes.getValue(color)
-            }
-            id.takeIf { validInput } ?: 0
+                Cubes(amount.toInt(), color)
+            }.toSet())
         }
     }
+}
 
-    fun part2(input: List<String>): Int {
-        return input.sumUpGames { _, cubes ->
+data class Cubes(val amount: Int, val color: String)
+
+fun main() {
+    fun part1(input: List<String>): Int = input
+        .map(Game::invoke)
+        .filter { game ->
+            game.setsOfCubes.all { setOfCubes ->
+                setOfCubes.cubes.all { (amount, color) ->
+                    amount <= maxCubes.getValue(color)
+                }
+            }
+        }
+        .sumOf { it.gameId }
+
+    fun part2(input: List<String>): Int = input
+        .map(Game::invoke)
+        .sumOf { game ->
             val maxColors = mutableMapOf("red" to 0, "green" to 0, "blue" to 0)
-            cubes.forEach { (amount, color) ->
-                maxColors[color] = maxOf(amount, maxColors.getValue(color))
+            game.setsOfCubes.forEach { setOfCubes ->
+                setOfCubes.cubes.forEach { (amount, color) ->
+                    maxColors[color] = maxOf(amount, maxColors.getValue(color))
+                }
             }
-            maxColors.values.reduce { acc, value -> acc * value }
+            maxColors.values.reduce(Int::times)
         }
-    }
 
     // test if implementation meets criteria from the description, like:
     val testInput = readInput("Day02_test")
