@@ -1,46 +1,34 @@
 fun main() {
-    fun part1(input: List<String>): Int {
-        return input.sumOf { line ->
-            val (gameId, game) = line.split(": ".toRegex())
-            val (_, id) = gameId.split(" ")
-            val setsOfCubes = game.split("; ")
-            val validInput = setsOfCubes.all { setOfCubes ->
-                val cubes = setOfCubes.split(", ")
-                cubes.all {
-                    val (amount, color) = it.split(" ")
-                    when (color) {
-                        "red" -> amount.toInt() <= 12
-                        "green" -> amount.toInt() <= 13
-                        "blue" -> amount.toInt() <= 14
-                        else -> error("Unknown color")
-                    }
-                }
+    fun List<String>.sumUpGames(block: (Int, List<Pair<Int, String>>) -> Int): Int = sumOf { line ->
+        val (gameId, game) = line.split(": ".toRegex())
+        val (_, id) = gameId.split(" ")
+        val cubes = game.split("; ").flatMap { setOfCubes ->
+            val cubes = setOfCubes.split(", ")
+            cubes.map {
+                val (amount, color) = it.split(" ")
+                val pair = amount.toInt() to color
+                pair
             }
-            if (validInput) id.toInt() else 0
+        }
+        block(id.toInt(), cubes)
+    }
+
+    fun part1(input: List<String>): Int {
+        return input.sumUpGames { id, cubes ->
+            val validInput = cubes.all { (amount, color) ->
+                amount <= maxCubes.getValue(color)
+            }
+            id.takeIf { validInput } ?: 0
         }
     }
 
     fun part2(input: List<String>): Int {
-        return input.sumOf { line ->
-            val (gameId, game) = line.split(": ".toRegex())
-            val (_, id) = gameId.split(" ")
-            var maxRed = 0
-            var maxGreen = 0
-            var maxBlue = 0
-            val setsOfCubes = game.split("; ")
-            setsOfCubes.forEach { setOfCubes ->
-                val cubes = setOfCubes.split(", ")
-                cubes.forEach {
-                    val (amount, color) = it.split(" ")
-                    when (color) {
-                        "red" -> maxRed = maxOf(amount.toInt(),maxRed)
-                        "green" -> maxGreen = maxOf(amount.toInt(),maxGreen)
-                        "blue" -> maxBlue = maxOf(amount.toInt(),maxBlue)
-                        else -> error("Unknown color")
-                    }
-                }
+        return input.sumUpGames { _, cubes ->
+            val maxColors = mutableMapOf("red" to 0, "green" to 0, "blue" to 0)
+            cubes.forEach { (amount, color) ->
+                maxColors[color] = maxOf(amount, maxColors.getValue(color))
             }
-            maxRed*maxGreen*maxBlue
+            maxColors.values.reduce { acc, value -> acc * value }
         }
     }
 
@@ -53,3 +41,5 @@ fun main() {
     part1(input).println()
     part2(input).println()
 }
+
+val maxCubes = mapOf("red" to 12, "green" to 13, "blue" to 14)
