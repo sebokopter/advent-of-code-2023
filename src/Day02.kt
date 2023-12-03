@@ -1,6 +1,6 @@
 fun main() {
     fun List<String>.sumUpGames(block: (Int, List<Pair<Int, String>>) -> Int): Int = sumOf { line ->
-        val (gameId, game) = line.split(": ".toRegex())
+        val (gameId, game) = line.split(": ")
         val (_, id) = gameId.split(" ")
         val cubes = game.split("; ").flatMap { setOfCubes ->
             val cubes = setOfCubes.split(", ")
