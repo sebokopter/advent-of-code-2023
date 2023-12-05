@@ -1,3 +1,5 @@
+import kotlin.math.min
+
 data class Line(val destination: Long, val source: Long, val length: Long) {
 
     companion object {
@@ -49,6 +51,17 @@ fun main() {
             }
         }
 
+    fun lookup2(seed: Long, almanac: Almanac): Long = almanac.categories
+        .fold(seed) { input, categoryMap ->
+            categoryMap.forEach { (destination, source, length) ->
+                if (input in (source until source + length)) {
+                    val offset = input - source
+                    return@fold destination + offset
+                }
+            }
+            input
+        }
+
     fun part1(input: List<String>): Long {
         val seeds = getSeeds(input)
         val almanac = Almanac(input.drop(2).joinToString("\n"))
@@ -57,10 +70,16 @@ fun main() {
     }
 
     fun part2(input: List<String>): Long {
-        val seeds = getSeeds2(input)
         val almanac = Almanac(input.drop(2).joinToString("\n"))
-        val locations = lookup(seeds, almanac)
-        return locations.min()
+        val chunks = getSeeds(input).chunked(2).map { (first, second) -> first to second }
+        var minima = Long.MAX_VALUE
+        chunks.forEach { (start, length) ->
+            for (seed in start until start + length) {
+                val location = lookup2(seed, almanac)
+                minima = min(minima,location)
+            }
+        }
+        return minima
     }
 
     // test if implementation meets criteria from the description, like:
