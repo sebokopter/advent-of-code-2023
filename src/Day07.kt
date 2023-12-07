@@ -1,6 +1,7 @@
 val cards = listOf('A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2')
 val cardsWithJoker = listOf('A', 'K', 'Q', 'T', '9', '8', '7', '6', '5', '4', '3', '2', 'J')
 val cardsWithoutJoker = listOf('A', 'K', 'Q', 'T', '9', '8', '7', '6', '5', '4', '3', '2')
+val cardsWithoutJokerString = listOf("A", "K", "Q", "T", "9", "8", "7", "6", "5", "4", "3", "2")
 
 enum class PrioType(val prio: Int) {
     HighCard(prio = 1),
@@ -13,6 +14,17 @@ enum class PrioType(val prio: Int) {
 }
 
 fun main() {
+
+    operator fun List<String>.times(other: List<String>): List<String> =
+        flatMap { item1 -> other.map { item2 -> item1 + item2 } }
+
+    fun cardsWithoutJokerCombinations(amount: Int): List<String> {
+        require(amount in 1 .. 5) { "amount needs to be between 1 and 5 (inclusive)" }
+        return (1 until amount).fold(cardsWithoutJokerString) { acc, _ ->
+            acc * cardsWithoutJokerString
+        }
+    }
+
     fun compareHighCards(firstHand: String, secondHand: String, cardSet: List<Char>): Int {
         for (index in firstHand.indices) {
             val card1 = firstHand[index]
@@ -45,60 +57,18 @@ fun main() {
     }
 
     fun getTypeWithJoker(hand: String): PrioType {
-        val amounts = cards.associateWith { card ->
-            hand.count { it == card }
-        }
-        val sorted =
-            amounts.asIterable().sortedByDescending { (_, amount) -> amount }.filter { (_, amount) -> amount >= 1 }
-        val jokerAmount = sorted.firstOrNull { (card, _) -> card == 'J' }?.value ?: 0
+        val jokerAmount = hand.count { card -> card == 'J' }
         val handWithoutJoker = hand.replace("J", "")
         return when (jokerAmount) {
             0 -> getType(hand)
-            1 -> {
-                val maxPrio = cardsWithoutJoker.maxOf { card ->
-                    getType(handWithoutJoker + card).prio
-                }
-                PrioType.entries.first { it.prio == maxPrio }
-            }
-
-            2 -> {
-                val maxPrio = cardsWithoutJoker.maxOf { card1 ->
-                    cardsWithoutJoker.maxOf { card2 ->
-                        getType(handWithoutJoker + card1 + card2).prio
-                    }
-                }
-                PrioType.entries.first { it.prio == maxPrio }
-
-            }
-
-            3 -> {
-                val maxPrio = cardsWithoutJoker.maxOf { card1 ->
-                    cardsWithoutJoker.maxOf { card2 ->
-                        cardsWithoutJoker.maxOf { card3 ->
-                            getType(handWithoutJoker + card1 + card2 + card3).prio
-                        }
-                    }
-                }
-                PrioType.entries.first { it.prio == maxPrio }
-
-            }
-
-            4 -> {
-                val maxPrio = cardsWithoutJoker.maxOf { card1 ->
-                    cardsWithoutJoker.maxOf { card2 ->
-                        cardsWithoutJoker.maxOf { card3 ->
-                            cardsWithoutJoker.maxOf { card4 ->
-                                getType(handWithoutJoker + card1 + card2 + card3 + card4).prio
-                            }
-                        }
-                    }
-                }
-                PrioType.entries.first { it.prio == maxPrio }
-
-            }
-
             5 -> PrioType.FiveOfAKind
-            else -> error("There can at most be 5 joker")
+            else -> {
+                check(jokerAmount in 0..5) {"There can at most be 5 joker"}
+                val maxPrio = cardsWithoutJokerCombinations(jokerAmount).maxOf { cards ->
+                    getType(handWithoutJoker + cards).prio
+                }
+                PrioType.entries.first { it.prio == maxPrio }
+            }
         }
     }
 
@@ -157,3 +127,4 @@ fun main() {
     part1(input).println()
     part2(input).println()
 }
+
