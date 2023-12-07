@@ -1,32 +1,24 @@
 val cards = listOf('A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2')
 val cardsWithJoker = listOf('A', 'K', 'Q', 'T', '9', '8', '7', '6', '5', '4', '3', '2', 'J')
+val cardsWithoutJoker = listOf('A', 'K', 'Q', 'T', '9', '8', '7', '6', '5', '4', '3', '2')
 
 enum class PrioType(val prio: Int) {
-    HighCard(prio = 1), OnePair(prio = 2), TwoPair(prio = 3), ThreeOfAKind(prio = 4), FullHouse(prio = 5), FourOfAKind(
-        prio = 6
-    ),
+    HighCard(prio = 1),
+    OnePair(prio = 2),
+    TwoPair(prio = 3),
+    ThreeOfAKind(prio = 4),
+    FullHouse(prio = 5),
+    FourOfAKind(prio = 6),
     FiveOfAKind(prio = 7)
 }
 
 fun main() {
-    fun compareHighCards(firstHand: String, secondHand: String): Int {
+    fun compareHighCards(firstHand: String, secondHand: String, cardSet: List<Char>): Int {
         for (index in firstHand.indices) {
             val card1 = firstHand[index]
             val card2 = secondHand[index]
-            val cardStrength1 = cards.indexOf(card1)
-            val cardStrength2 = cards.indexOf(card2)
-            if (cardStrength1 == cardStrength2) continue
-            return if (cardStrength1 < cardStrength2) 1 // higher index => weaker card prio
-            else -1
-        }
-        return 0
-    }
-    fun compareHighCardsWithJoker(firstHand: String, secondHand: String): Int {
-        for (index in firstHand.indices) {
-            val card1 = firstHand[index]
-            val card2 = secondHand[index]
-            val cardStrength1 = cardsWithJoker.indexOf(card1)
-            val cardStrength2 = cardsWithJoker.indexOf(card2)
+            val cardStrength1 = cardSet.indexOf(card1)
+            val cardStrength2 = cardSet.indexOf(card2)
             if (cardStrength1 == cardStrength2) continue
             return if (cardStrength1 < cardStrength2) 1 // higher index => weaker card prio
             else -1
@@ -34,57 +26,15 @@ fun main() {
         return 0
     }
 
-    fun getTypeWithJoker(hand: String): PrioType {
-        val amounts = cards.associateWith { card ->
-            hand.count { it == card }
-        }
-        val sorted =
-            amounts.asIterable().sortedByDescending { (_, amount) -> amount }.filter { (_, amount) -> amount >= 1 }
-        val amountOfMostCards = sorted.first().component2()
-        val jokerAmount = sorted.firstOrNull() { (card, amount) -> card == 'J' }?.component2() ?: 0
-        val hasJoker = jokerAmount > 0
-        return when (sorted.size) {
-            1 -> PrioType.FiveOfAKind
-            2 -> if (hasJoker) return PrioType.FiveOfAKind else {
-                if (amountOfMostCards == 4) {
-                    PrioType.FourOfAKind
-                } else {
-                    PrioType.FullHouse
-                }
-            }
 
-            3 -> if (amountOfMostCards == 3) {
-                when (jokerAmount) {
-                    3 -> if (sorted[1].component2() == 2) PrioType.FiveOfAKind else PrioType.FourOfAKind
-                    2 -> PrioType.FiveOfAKind
-                    1 -> PrioType.FourOfAKind
-                    0 -> PrioType.ThreeOfAKind
-                    else -> error("wrong joker calculation")
-                }
-            } else {
-                when (jokerAmount) {
-                    2 -> PrioType.FourOfAKind
-                    1 -> if (sorted[1].component2() == 2) PrioType.FullHouse else PrioType.ThreeOfAKind
-                    0 -> PrioType.TwoPair
-                    else -> error("wrong joker calculation")
-                }
-            }
-
-            4 -> PrioType.OnePair
-
-            5 -> PrioType.HighCard
-            else -> error("Can not happen")
-        }
-
-    }
     fun getType(hand: String): PrioType {
         val amounts = cards.associateWith { card ->
             hand.count { it == card }
         }
-        val sorted =
+        val sortedByAmount =
             amounts.asIterable().sortedByDescending { (_, amount) -> amount }.filter { (_, amount) -> amount >= 1 }
-        val amountOfMostCards = sorted.first().component2()
-        return when (sorted.size) {
+        val amountOfMostCards = sortedByAmount.first().value
+        return when (sortedByAmount.size) {
             1 -> PrioType.FiveOfAKind
             2 -> if (amountOfMostCards == 4) PrioType.FourOfAKind else PrioType.FullHouse
             3 -> if (amountOfMostCards == 3) PrioType.ThreeOfAKind else PrioType.TwoPair
@@ -93,20 +43,78 @@ fun main() {
             else -> error("Can not happen")
         }
     }
-    fun wins(firstHand: String, secondHand: String): Int {
+
+    fun getTypeWithJoker(hand: String): PrioType {
+        val amounts = cards.associateWith { card ->
+            hand.count { it == card }
+        }
+        val sorted =
+            amounts.asIterable().sortedByDescending { (_, amount) -> amount }.filter { (_, amount) -> amount >= 1 }
+        val jokerAmount = sorted.firstOrNull { (card, _) -> card == 'J' }?.value ?: 0
+        val handWithoutJoker = hand.replace("J", "")
+        return when (jokerAmount) {
+            0 -> getType(hand)
+            1 -> {
+                val maxPrio = cardsWithoutJoker.maxOf { card ->
+                    getType(handWithoutJoker + card).prio
+                }
+                PrioType.entries.first { it.prio == maxPrio }
+            }
+
+            2 -> {
+                val maxPrio = cardsWithoutJoker.maxOf { card1 ->
+                    cardsWithoutJoker.maxOf { card2 ->
+                        getType(handWithoutJoker + card1 + card2).prio
+                    }
+                }
+                PrioType.entries.first { it.prio == maxPrio }
+
+            }
+
+            3 -> {
+                val maxPrio = cardsWithoutJoker.maxOf { card1 ->
+                    cardsWithoutJoker.maxOf { card2 ->
+                        cardsWithoutJoker.maxOf { card3 ->
+                            getType(handWithoutJoker + card1 + card2 + card3).prio
+                        }
+                    }
+                }
+                PrioType.entries.first { it.prio == maxPrio }
+
+            }
+
+            4 -> {
+                val maxPrio = cardsWithoutJoker.maxOf { card1 ->
+                    cardsWithoutJoker.maxOf { card2 ->
+                        cardsWithoutJoker.maxOf { card3 ->
+                            cardsWithoutJoker.maxOf { card4 ->
+                                getType(handWithoutJoker + card1 + card2 + card3 + card4).prio
+                            }
+                        }
+                    }
+                }
+                PrioType.entries.first { it.prio == maxPrio }
+
+            }
+
+            5 -> PrioType.FiveOfAKind
+            else -> error("There can at most be 5 joker")
+        }
+    }
+
+    fun wins(firstHand: String, secondHand: String, cardSet: List<Char>): Int {
         val typeOfFirstHand = getType(firstHand)
         val typeOfSecondHand = getType(secondHand)
         if (typeOfFirstHand.prio > typeOfSecondHand.prio) return 1
         if (typeOfFirstHand.prio < typeOfSecondHand.prio) return -1
-        return compareHighCards(firstHand, secondHand)
+        return compareHighCards(firstHand, secondHand, cardSet)
     }
-
-    fun winsWithJoker(firstHand: String, secondHand: String): Int {
+    fun winsWithJoker(firstHand: String, secondHand: String, cardSet: List<Char>): Int {
         val typeOfFirstHand = getTypeWithJoker(firstHand)
         val typeOfSecondHand = getTypeWithJoker(secondHand)
         if (typeOfFirstHand.prio > typeOfSecondHand.prio) return 1
         if (typeOfFirstHand.prio < typeOfSecondHand.prio) return -1
-        return compareHighCardsWithJoker(firstHand, secondHand)
+        return compareHighCards(firstHand, secondHand, cardSet)
     }
 
     fun part1(input: List<String>): Int {
@@ -115,7 +123,7 @@ fun main() {
             hand to bid.toInt()
         }
         val sortedHandBids = handBids.sortedWith(Comparator { (firstHand, _), (secondHand, _) ->
-            return@Comparator wins(firstHand, secondHand)
+            return@Comparator wins(firstHand, secondHand, cards)
         })
         return sortedHandBids.withIndex().fold(0) { totalWinnings, (index, pair) ->
             val (_, bid) = pair
@@ -130,7 +138,7 @@ fun main() {
             hand to bid.toInt()
         }
         val sortedHandBids = handBids.sortedWith(Comparator { (firstHand, _), (secondHand, _) ->
-            return@Comparator winsWithJoker(firstHand, secondHand)
+            return@Comparator winsWithJoker(firstHand, secondHand, cardsWithJoker)
         })
         return sortedHandBids.withIndex().fold(0) { totalWinnings, (index, pair) ->
             val (_, bid) = pair
