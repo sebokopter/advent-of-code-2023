@@ -11,6 +11,19 @@ fun main() {
         return leftRightInstruction to nodes
     }
 
+    fun nextNode(
+        instruction: Char,
+        nodes: Map<String, Pair<String, String>>,
+        currentNode: String
+    ): String {
+        val nextNode = if (instruction == 'L') {
+            nodes.getValue(currentNode).first
+        } else {
+            nodes.getValue(currentNode).second
+        }
+        return nextNode
+    }
+
     fun part1(input: String): Int {
         val (leftRightInstruction, nodes) = parseNodeInput(input)
         var currentNode = "AAA"
@@ -18,12 +31,7 @@ fun main() {
         var steps = 0
         do {
             val instruction = leftRightInstruction[instructionIndex]
-            val nextNode = if (instruction == 'L') {
-                nodes.getValue(currentNode).first
-            } else {
-                nodes.getValue(currentNode).second
-            }
-            currentNode = nextNode
+            currentNode = nextNode(instruction, nodes, currentNode)
             instructionIndex++
             if (instructionIndex > leftRightInstruction.lastIndex) instructionIndex = 0
             steps++
@@ -67,18 +75,12 @@ fun main() {
 
         // variant 2: multiplying step counts
         val stepsToEndNodes = currentNodes.map { startNode ->
-            println("startNode: $startNode")
             var instructionIndex = 0
             var steps = 0.toBigInteger()
             var currentNode = startNode
             do {
                 val instruction = leftRightInstruction[instructionIndex]
-                val nextNode = if (instruction == 'L') {
-                    nodes.getValue(currentNode).first
-                } else {
-                    nodes.getValue(currentNode).second
-                }
-                currentNode = nextNode
+                currentNode = nextNode(instruction, nodes, currentNode)
                 instructionIndex++
                 if (instructionIndex > leftRightInstruction.lastIndex) instructionIndex = 0
                 steps++
