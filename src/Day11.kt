@@ -67,14 +67,32 @@ fun main() {
     }
 
     fun shortestPath(b: Coordinate, a: Coordinate, expansionFactor: Int = 2, image: List<List<Char>>): Int {
-        println(image)
-        val horizontalEmptyColumns =
-            image[minOf(a.first, b.first)]
-                .subList(minOf(a.second, b.second), maxOf(a.second, b.second))
-                .count { it == emptySpaceMarker }
-        val verticalEmptyRows = image
-            .subList(minOf(a.first, b.first), maxOf(a.first, b.first))
-            .count { it[minOf(a.second, b.second)] == emptySpaceMarker }
+        val horizontalEmptyColumns = if (a.second < b.second) {
+            image[a.first]
+                .subList(a.second, b.second + 1)
+                .count {
+                    it == emptySpaceMarker
+                }
+        } else {
+            image[a.first]
+                .subList(b.second, a.second + 1)
+                .count {
+                    it == emptySpaceMarker
+                }
+        }
+        val verticalEmptyRows = if (a.first < b.first) {
+            image
+                .subList(a.first, b.first + 1)
+                .count {
+                    it[a.second] == emptySpaceMarker
+                }
+        } else {
+            image
+                .subList(b.first, a.first + 1)
+                .count {
+                    it[a.second] == emptySpaceMarker
+                }
+        }
         return abs(b.first - a.first) + abs(b.second - a.second) + (verticalEmptyRows * expansionFactor) + (horizontalEmptyColumns * expansionFactor)
     }
 
@@ -84,7 +102,6 @@ fun main() {
         image: List<List<Char>>
     ): Int = pairs.sumOf { (a, b) ->
         val shortestPath = shortestPath(a, b, expansionFactor, image)
-        println(shortestPath)
         shortestPath
     }
 
@@ -93,7 +110,6 @@ fun main() {
         val res = numberGalaxies(expanded)
         val allPairs = generatePairs(res)
         val sumShortestPaths = sumShortestPaths(allPairs, expansionFactor, expanded)
-        sumShortestPaths.println()
         return sumShortestPaths
     }
 
@@ -102,7 +118,6 @@ fun main() {
         val res = numberGalaxies(expanded)
         val allPairs = generatePairs(res)
         val sumShortestPaths = sumShortestPaths(allPairs, expansionFactor, expanded)
-        println(sumShortestPaths)
         return sumShortestPaths
     }
 
