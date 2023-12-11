@@ -27,16 +27,19 @@ fun main() {
         return new
     }
 
-    fun expand1Dimension(original: List<List<Char>>): List<List<Char>> {
+    fun expand1Dimension(original: List<List<Char>>, times: Int = 2): List<List<Char>> {
         return original.fold(mutableListOf()) { expanded, line ->
-            expanded.add(line)
-            if (line.none { it == '#' }) expanded.add(line)
+            if (line.any { it == '#' }) {
+                expanded.add(line)
+            } else {
+                repeat(times) { expanded.add(line) }
+            }
             expanded
         }
     }
 
-    fun expand2Dimension(input: List<List<Char>>): List<List<Char>> {
-        val oneDimensionExpanded = expand1Dimension(input)
+    fun expand2Dimension(input: List<List<Char>>, times: Int = 2): List<List<Char>> {
+        val oneDimensionExpanded = expand1Dimension(input, times)
         val swapImage = swapImage(oneDimensionExpanded)
         val twoDimensionsExpanded = expand1Dimension(swapImage)
         return swapImage(twoDimensionsExpanded)
@@ -67,7 +70,7 @@ fun main() {
     }
 
     fun part1(input: List<String>): Int {
-        val expanded = expand2Dimension(input.map { it.toList() })
+        val expanded = expand2Dimension(input.map { it.toList() }, 2)
         val res = countGalaxies(expanded)
         val allPairs = generatePairs(res)
         return sumShortestPaths(allPairs)
